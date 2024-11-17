@@ -13,9 +13,9 @@ import {
 import "stream-chat-react/dist/css/v2/index.css";
 
 // Stream API key
-const apiKey = "n4mpp2y7j62w"; // Replace with your actual Stream API Key
+const apiKey = "n4mpp2y7j62w";
 
-// User profiles
+// Simulate 2 Users
 const user1 = {
   id: "john",
   name: "John",
@@ -33,37 +33,30 @@ export default function App() {
   const [client, setClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldRender, setShouldRender] = useState(true); // Control re-rendering
+  const [shouldRender, setShouldRender] = useState(true);
 
   // Create and initialize the client and channel when user switches
   useEffect(() => {
     const initChat = async () => {
-      // Clean up previous client if exists
       if (client) {
         await client.disconnectUser();
       }
-
-      // Create a new StreamChat client instance for the new user
       const chatClient = StreamChat.getInstance(apiKey);
 
       try {
-        // Connect the new user
         await chatClient.connectUser(
           currentUser,
           chatClient.devToken(currentUser.id)
         );
 
-        // Create or get the channel (we will use the same channel for both users)
         const createdChannel = chatClient.channel("team", "react-team-chat", {
           image: "https://www.patterns.dev/img/reactjs/react-logo@3x.svg",
           name: "React Team Discussions",
           members: ["john", "jane"], // Add both john and jane as members
         });
 
-        // Watch the channel
         await createdChannel.watch();
 
-        // Set client and channel to state
         setClient(chatClient);
         setChannel(createdChannel);
         setIsLoading(false);
@@ -77,29 +70,25 @@ export default function App() {
       initChat();
     }
 
-    // Cleanup function to disconnect the user on component unmount
     return () => {
       if (client) {
         client.disconnectUser();
       }
     };
-  }, [currentUser, shouldRender]); // Trigger re-run when currentUser changes
+  }, [currentUser, shouldRender]);
 
-  // Show loading indicator while the chat client or channel is being initialized
   if (isLoading) {
     return <LoadingIndicator />;
   }
 
-  // Function to toggle between users
   const toggleUser = () => {
-    setShouldRender(false); // Set to false to unmount and re-mount component
-    setCurrentUser(currentUser.id === "john" ? user2 : user1); // Toggle between john and jane
-    setShouldRender(true); // Set to true to trigger re-render
+    setShouldRender(false);
+    setCurrentUser(currentUser.id === "john" ? user2 : user1);
+    setShouldRender(true);
   };
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Button to toggle between users */}
       <div
         style={{
           position: "absolute",
@@ -131,7 +120,6 @@ export default function App() {
         </p>
       </div>
 
-      {/* Chat Interface */}
       <Chat client={client} theme="messaging dark">
         <Channel channel={channel}>
           <Window>
