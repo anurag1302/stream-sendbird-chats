@@ -13,7 +13,7 @@ import {
 import "stream-chat-react/dist/css/v2/index.css";
 
 // Stream API key
-const apiKey = "n4mpp2y7j62w";
+const apiKey = import.meta.env.VITE_STREAM_API_KEY;
 
 // Simulate 2 Users
 const user1 = {
