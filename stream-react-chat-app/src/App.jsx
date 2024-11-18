@@ -12,10 +12,8 @@ import {
 } from "stream-chat-react";
 import "stream-chat-react/dist/css/v2/index.css";
 
-// Stream API key
 const apiKey = import.meta.env.VITE_STREAM_API_KEY;
 
-// Simulate 2 Users
 const user1 = {
   id: "john",
   name: "John",
@@ -29,18 +27,21 @@ const user2 = {
 };
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(user1); // Default to user1 (John)
+  const [currentUser, setCurrentUser] = useState(user1);
   const [client, setClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldRender, setShouldRender] = useState(true);
 
-  // Create and initialize the client and channel when user switches
   useEffect(() => {
+    let isMounted = true; // To prevent state updates on unmounted components
+
     const initChat = async () => {
       if (client) {
-        await client.disconnectUser();
+        await client.disconnectUser(); // Disconnect old client
+        setClient(null);
+        setChannel(null); // Clear old channel
       }
+
       const chatClient = StreamChat.getInstance(apiKey);
 
       try {
@@ -52,40 +53,39 @@ export default function App() {
         const createdChannel = chatClient.channel("team", "react-team-chat", {
           image: "https://www.patterns.dev/img/reactjs/react-logo@3x.svg",
           name: "React Team Discussions",
-          members: ["john", "jane"], // Add both john and jane as members
+          members: ["john", "jane"],
         });
 
         await createdChannel.watch();
 
-        setClient(chatClient);
-        setChannel(createdChannel);
-        setIsLoading(false);
+        if (isMounted) {
+          setClient(chatClient);
+          setChannel(createdChannel);
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error("Error initializing chat:", error);
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    if (shouldRender) {
-      initChat();
-    }
+    initChat();
 
     return () => {
+      isMounted = false; // Avoid updates if the component unmounts
       if (client) {
         client.disconnectUser();
       }
     };
-  }, [currentUser, shouldRender]);
+  }, [currentUser]);
+
+  const toggleUser = () => {
+    setCurrentUser(currentUser.id === "john" ? user2 : user1);
+  };
 
   if (isLoading) {
     return <LoadingIndicator />;
   }
-
-  const toggleUser = () => {
-    setShouldRender(false);
-    setCurrentUser(currentUser.id === "john" ? user2 : user1);
-    setShouldRender(true);
-  };
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -120,16 +120,18 @@ export default function App() {
         </p>
       </div>
 
-      <Chat client={client} theme="messaging dark">
-        <Channel channel={channel}>
-          <Window>
-            <ChannelHeader />
-            <MessageList />
-            <MessageInput />
-          </Window>
-          <Thread />
-        </Channel>
-      </Chat>
+      {client && channel && (
+        <Chat client={client} theme="messaging dark">
+          <Channel channel={channel}>
+            <Window>
+              <ChannelHeader />
+              <MessageList />
+              <MessageInput />
+            </Window>
+            <Thread />
+          </Channel>
+        </Chat>
+      )}
     </div>
   );
 }
